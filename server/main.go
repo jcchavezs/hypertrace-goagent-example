@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
@@ -96,6 +97,7 @@ func initDB() (*sql.DB, error) {
 		if err := db.Ping(); err != nil && i == dbPingRetries {
 			return nil, fmt.Errorf("failed to ping the DB: %v", err)
 		}
+		time.Sleep(time.Second)
 	}
 
 	return db, nil

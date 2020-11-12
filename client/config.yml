@@ -1,0 +1,3 @@
+reporting:
+  address: "localhost"
+  secure: false

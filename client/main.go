@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	cfg := config.Load()
+	cfg := config.LoadFromFile("./config.yml")
 	cfg.ServiceName = config.String("client")
 
 	shutdown := hypertrace.Init(cfg)
