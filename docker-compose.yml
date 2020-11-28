@@ -20,7 +20,7 @@ services:
     ports:
       - "8081:8081"
     environment:
-      BACKEND_HOST: "backend"
+      BACKEND_URL: "http://backend:9000"
       HT_REPORTING_ADDRESS: "hypertrace-collector"
     depends_on:
       - backend

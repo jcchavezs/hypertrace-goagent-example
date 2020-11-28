@@ -1,4 +1,4 @@
-module github.com/jcchavezs/hypertrace-goagent-example/server
+module github.com/jcchavezs/hypertrace-goagent-example/backend
 
 go 1.15
 

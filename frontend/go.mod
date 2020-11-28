@@ -1,4 +1,4 @@
-module github.com/jcchavezs/hypertrace-goagent-example/client
+module github.com/jcchavezs/hypertrace-goagent-example/frontend
 
 go 1.15
 

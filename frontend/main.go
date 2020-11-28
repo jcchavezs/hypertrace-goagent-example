@@ -21,18 +21,18 @@ func main() {
 	shutdown := hypertrace.Init(cfg)
 	defer shutdown()
 
-	backendHost := os.Getenv("BACKEND_HOST")
-	if backendHost == "" {
-		backendHost = "localhost"
+	backendURL := os.Getenv("BACKEND_URL")
+	if backendURL == "" {
+		backendURL = "http://localhost:9000"
 	}
 
 	r := mux.NewRouter()
 	r.Use(hypermux.NewMiddleware())
-	r.Handle("/", makeHandler(backendHost))
+	r.Handle("/", makeHandler(backendURL))
 	log.Fatal(http.ListenAndServe(":8081", r))
 }
 
-func makeHandler(backendHost string) http.HandlerFunc {
+func makeHandler(backendURL string) http.HandlerFunc {
 	client := http.Client{
 		Transport: hyperhttp.NewTransport(http.DefaultTransport),
 	}
@@ -40,7 +40,7 @@ func makeHandler(backendHost string) http.HandlerFunc {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		req, err := http.NewRequest(
 			"GET",
-			fmt.Sprintf("http://%s:9000/", backendHost),
+			backendURL,
 			bytes.NewBufferString(`{"name":"Dave"}`),
 		)
 		req = req.WithContext(r.Context())
