@@ -1,12 +1,31 @@
-version: "3"
+version: "2.4"
 
+# Generate traffic by hitting http://localhost:8081
 services:
-  mysql:
-    image: mysql:latest
-    environment:
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_DATABASE=app
-    volumes:
-      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+  backend:
+    build:
+      context: ./backend
     ports:
-      - "3306:3306"
+      - "9000:9000"
+    environment:
+      MYSQL_HOST: "mysql"
+      HT_REPORTING_ADDRESS: "hypertrace-collector"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "8081:8081"
+    environment:
+      BACKEND_HOST: "backend"
+      HT_REPORTING_ADDRESS: "hypertrace-collector"
+    depends_on:
+      - backend
+
+  mysql:
+    extends:
+      file: docker-compose-mysql.yml
+      service: mysql

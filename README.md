@@ -4,19 +4,33 @@ This repository shows a example on how to use [Go Agent](https://github.com/hype
 
 ![Screenshot](screenshot.png)
 
-**Run server:**
+## Running it locally
+
+**Run backend:**
 
 ```bash
-go run server/main.go
+go run backend/main.go
 ```
 
-**Run client:**
+**Run frontend:**
 
 ```bash
-go run client/main.go
+go run frontend/main.go
 ```
 
-**Run hypertrace and mysql:**
+**Run Hypertrace and MySQL:**
+
+```bash
+docker-compose -f docker-compose-mysql.yml -f docker-compose-hypertrace.yml up --renew-anon-volumes
+```
+
+Once everything is up and running you can curl the frontend:
+
+```bash
+curl -i http://localhost:8081
+```
+
+## Running it docker
 
 ```bash
 docker-compose -f docker-compose.yml -f docker-compose-hypertrace.yml up --renew-anon-volumes

@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
@@ -20,7 +21,7 @@ import (
 
 func main() {
 	cfg := config.Load()
-	cfg.ServiceName = config.String("server")
+	cfg.ServiceName = config.String("backend")
 
 	shutdown := hypertrace.Init(cfg)
 	defer shutdown()
@@ -31,8 +32,8 @@ func main() {
 	}
 
 	r := mux.NewRouter()
-	r.Handle("/foo", hyperhttp.NewHandler(makeFooHandler(db), "/foo"))
-	log.Fatal(http.ListenAndServe(":8081", r))
+	r.Handle("/", hyperhttp.NewHandler(makeFooHandler(db), "/"))
+	log.Fatal(http.ListenAndServe(":9000", r))
 }
 
 type person struct {
@@ -47,6 +48,7 @@ func makeFooHandler(db *sql.DB) http.HandlerFunc {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+		defer r.Body.Close()
 
 		p := &person{}
 		err = json.Unmarshal(sBody, p)
@@ -61,22 +63,29 @@ func makeFooHandler(db *sql.DB) http.HandlerFunc {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(fmt.Sprintf("{\"error\": \"Failed to insert %s\"}", p.Name)))
+			fmt.Printf("%s %s - %d\n", r.Method, r.URL.String(), http.StatusInternalServerError)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(fmt.Sprintf("{\"message\": \"Hello %s\"}", p.Name)))
+		fmt.Printf("%s %s - %d\n", r.Method, r.URL.String(), http.StatusOK)
 	})
 }
 
-const dbPingRetries = 5
+const dbPingRetries = 10
 
 func initDB() (*sql.DB, error) {
 	var (
 		driver driver.Driver
 		db     *sql.DB
 	)
+
+	dbHost := os.Getenv("MYSQL_HOST")
+	if dbHost == "" {
+		dbHost = "localhost"
+	}
 
 	// Explicitly wrap the MySQLDriver driver with hypersql.
 	driver = hypersql.Wrap(&mysql.MySQLDriver{})
@@ -88,16 +97,22 @@ func initDB() (*sql.DB, error) {
 	// ?interpolateParams=true will escape the variables for any requests
 	// and send ready-for-use queries to the server for github.com/go-sql-driver/mysql.
 	// This save us a meaningless span.
-	db, err := sql.Open("ht-mysql", "root:root@tcp(localhost)/app?interpolateParams=true")
+	db, err := sql.Open("ht-mysql", "root:root@tcp("+dbHost+")/app?interpolateParams=true")
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect the DB: %v", err)
 	}
 
 	for i := 0; i <= dbPingRetries; i++ {
-		if err := db.Ping(); err != nil && i == dbPingRetries {
-			return nil, fmt.Errorf("failed to ping the DB: %v", err)
+		if err = db.Ping(); err == nil {
+			break
 		}
-		time.Sleep(time.Second)
+
+		if i == dbPingRetries {
+			return nil, fmt.Errorf("failed to ping the DB after %d retries: %v", dbPingRetries, err)
+		}
+
+		fmt.Printf("failed to ping DB: %v. Retrying\n", err)
+		time.Sleep(2 * time.Second)
 	}
 
 	return db, nil
