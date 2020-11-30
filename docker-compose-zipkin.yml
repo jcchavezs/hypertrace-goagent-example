@@ -1,0 +1,10 @@
+version: "3"
+services:
+  zipkin:
+    image: ghcr.io/openzipkin/zipkin
+    ports:
+      - "9411:9411"
+    networks:
+      default:
+        aliases:
+          - hypertrace-collector
